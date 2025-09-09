@@ -13,7 +13,8 @@ from api.endpoints import endpoints, get_stored_data
 app = dash.Dash(__name__, url_base_pathname='/')
 app.title = "Coleira Inteligente Dashboard"
 
-app.server.register_blueprint(endpoints)
+server = app.server
+server.register_blueprint(endpoints)
 
 # Layout do Dash
 app.layout = html.Div([

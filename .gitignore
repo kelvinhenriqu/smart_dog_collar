@@ -4,6 +4,9 @@ venv/
 env/
 ENV/
 
+#ignore docker images
+*.tar
+
 # Byte-compiled / optimized / DLL files
 **/__pycache__/
 *.py[cod]
