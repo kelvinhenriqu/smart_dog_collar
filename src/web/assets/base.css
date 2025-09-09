@@ -1,0 +1,84 @@
+/* Oculta controles do mapa */
+div.maplibregl-control-container {
+    display: none;
+}
+
+:root {
+    --primary: #2563eb;
+    --secondary: #f3f4f6;
+    --accent: #ff9800;
+    --bg: #f9fafb;
+    --card-bg: #ffffff;
+    --text: #23272f;
+    --border-radius: 16px;
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+body, .main-container {
+    background: var(--bg) !important;
+    color: var(--text);
+    font-family: 'Inter', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-title {
+    text-align: center;
+    margin-bottom: 32px;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-content {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin: 0 auto;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+
+
+.location-card.card {
+    width: 60%;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1.5px 6px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    background: var(--card-bg);
+}
+
+.additional-data-section.card {
+    width: 30%;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1.5px 6px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    background: var(--card-bg);
+}
+
+/* Tiles e cards genéricos */
+.card, .dbc-card, .tile {
+    box-shadow: var(--shadow);
+    border-radius: var(--border-radius);
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid #2c3240;
+}
+
+@media (max-width: 768px) {
+    .dashboard-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .location-card.card, .additional-data-section.card {
+        width: 95%;
+        margin-bottom: 20px;
+    }
+}
