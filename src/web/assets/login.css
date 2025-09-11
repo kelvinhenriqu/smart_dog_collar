@@ -1,0 +1,69 @@
+/* Estilos específicos para a tela de login */
+.login-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Input do código PET */
+#pet-code-input:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+}
+
+#pet-code-input:invalid {
+    border-color: #ef4444 !important;
+}
+
+/* Botão QR Code */
+.qr-button:hover {
+    background-color: #f59e0b !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(245, 158, 11, 0.3);
+}
+
+.qr-button:active {
+    transform: translateY(0);
+}
+
+/* Botão de acesso */
+.access-button:hover:not(:disabled) {
+    background-color: #4f46e5 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+}
+
+.access-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Animação para status messages */
+#login-status {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+    .login-card {
+        margin: 1rem;
+        padding: 2rem !important;
+    }
+    
+    .login-title {
+        font-size: 2rem !important;
+    }
+}

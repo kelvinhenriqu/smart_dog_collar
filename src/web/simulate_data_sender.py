@@ -2,19 +2,23 @@ import requests
 import time
 import random
 
-ENDPOINT = "http://localhost:8050/data/update"  # Altere para o endereço correto do seu servidor
+ENDPOINT = "http://localhost:8050/map/update"  # Altere para o endereço correto do seu servidor
 
 # Valores base para simulação
 BASE_LAT = -23.1865
 BASE_LON = -46.8845
 
 while True:
-    payload = {
+    '''payload = {
         "lat": BASE_LAT + random.uniform(-0.0001, 0.0001),
         "lon": BASE_LON + random.uniform(-0.0001, 0.0001),
         "battery_level": random.randint(20, 100),
         "heart_rate": random.randint(80, 180),
         "pet_body_temperature": round(random.uniform(30.0, 39.0), 1)
+    }'''
+    payload = {
+        "lat": BASE_LAT + random.uniform(-0.0009, 0.0009),
+        "lon": BASE_LON + random.uniform(-0.0009, 0.0009),
     }
     try:
         response = requests.post(ENDPOINT, json=payload)

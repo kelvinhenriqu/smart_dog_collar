@@ -11,13 +11,14 @@ ENV/
 **/__pycache__/
 *.py[cod]
 *$py.class
-
+*/__pycache__/
 # Distribution / packaging
 build/
 dist/
 *.egg-info/
 .eggs/
 *.egg
+*.pyc
 
 # Test and coverage reports
 htmlcov/
