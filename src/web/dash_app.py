@@ -11,9 +11,20 @@ import requests
 
 
 
-external_stylesheets = [dbc.themes.BOOTSTRAP,"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"]
+external_stylesheets = [
+    dbc.themes.BOOTSTRAP,
+    "https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+]
 
-app = dash.Dash(__name__, url_base_pathname='/', external_stylesheets=external_stylesheets, use_pages=True)
+external_scripts = [
+    "https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"
+]
+
+app = dash.Dash(__name__, 
+                url_base_pathname='/', 
+                external_stylesheets=external_stylesheets,
+                external_scripts=external_scripts,
+                use_pages=True)
 app.title = "smart-collar-dashboard"
 
 server = app.server

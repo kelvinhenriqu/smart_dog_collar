@@ -1,7 +1,6 @@
 import dash
 from dash import dcc, html, Input, Output, callback, no_update, ctx, clientside_callback, ClientsideFunction
 import dash_bootstrap_components as dbc
-import dash_qr_manager as dqm
 
 dash.register_page(__name__, path="/login")
 
@@ -35,37 +34,32 @@ layout = html.Div([
                         id="qrcode-container-close",
                         style={'position': 'absolute', 'top': '10px', 'right': '10px', 'zIndex': 2, 'background': '#00000000', 'border': 'none'}
                     ),
-                    dqm.DashQrReader(
-                        id='qr-code-reader',
-                        videoContainerStyle={
-                            'maxWidth': '400px',
-                            'height': '300px',
-                            'borderRadius': '12px',
-                            'objectFit': 'cover',
-                            'backgroundColor': '#000'
-                        },
-                        videoStyle={
-                            'borderRadius': '12px',
-                            'objectFit': 'cover'
-                        }
-                    ),
-                    html.P("Aponte a câmera para o QR Code", 
-                               style={'textAlign': 'center', 'marginTop': '1rem', 'color': '#64748b'}),
-                    
-                    # Botão para alternar câmera
-                    html.Button(
-                        "🔄 Trocar Câmera",
-                        id="switch-camera-btn",
-                        style={
-                            'backgroundColor': '#64748b',
-                            'color': 'white',
-                            'border': 'none',
-                            'borderRadius': '8px',
-                            'padding': '8px 16px',
-                            'fontSize': '0.9rem',
-                            'cursor': 'pointer',
-                            'marginTop': '1rem'
-                        }
+                    # Container da câmera HTML5
+                    html.Div([
+                        html.Video(
+                            id="qr-video",
+                            autoPlay=True,
+                            style={
+                                'width': '100%', 
+                                'maxWidth': '400px', 
+                                'height': '300px',
+                                'borderRadius': '12px',
+                                'objectFit': 'cover',
+                                'backgroundColor': '#000'
+                            }
+                        ),
+                        html.Canvas(
+                            id="qr-canvas",
+                            style={'display': 'none'}
+                        ),
+                        html.P("Aponte a câmera para o QR Code", 
+                               style={'textAlign': 'center', 'marginTop': '1rem', 'color': '#64748b'})
+                    ], style={'textAlign': 'center'}),
+                    # Input oculto para capturar o resultado
+                    dcc.Input(
+                        id="qr-result",
+                        type="hidden",
+                        value=""
                     )
                 ], hidden=True, id="qrcode-container", style={'position': 'relative', 'padding': '1rem', 'textAlign': 'center'}),
                         
@@ -195,93 +189,6 @@ layout = html.Div([
         'width': '100%'
     })
 ])
-
-# Callback clientside para inicializar o sistema de câmera
-clientside_callback(
-    """
-    function(pathname) {
-        // Aguardar um pouco para garantir que a página carregou
-        setTimeout(function() {
-            console.log('🎥 Inicializando sistema de câmera (com delay)');
-            
-            // Definir variável global para controlar câmera
-            if (!window.currentFacingMode) {
-                window.currentFacingMode = 'environment'; // Câmera traseira por padrão
-                console.log('📷 Câmera padrão definida como traseira');
-            }
-            
-            // Interceptar getUserMedia apenas uma vez
-            if (!window.cameraIntercepted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-                navigator.mediaDevices.getUserMedia = function(constraints) {
-                    console.log('📷 getUserMedia interceptado, constraints originais:', constraints);
-                    
-                    if (constraints && constraints.video) {
-                        // Aplicar configuração de câmera
-                        if (typeof constraints.video === 'object') {
-                            constraints.video.facingMode = { ideal: window.currentFacingMode };
-                        } else {
-                            constraints.video = { facingMode: { ideal: window.currentFacingMode } };
-                        }
-                        console.log('📷 Usando câmera:', window.currentFacingMode, constraints);
-                    }
-                    return originalGetUserMedia(constraints);
-                };
-                window.cameraIntercepted = true;
-                console.log('✅ getUserMedia interceptado com sucesso');
-            }
-            
-            // Definir função para trocar câmera
-            window.switchCamera = function() {
-                const oldMode = window.currentFacingMode;
-                window.currentFacingMode = window.currentFacingMode === 'environment' ? 'user' : 'environment';
-                console.log('🔄 Trocando câmera de', oldMode, 'para', window.currentFacingMode);
-                
-                // Recarregar o QR reader
-                const qrContainer = document.getElementById('qrcode-container');
-                if (qrContainer && !qrContainer.hidden) {
-                    console.log('🔄 Recarregando QR container');
-                    qrContainer.hidden = true;
-                    setTimeout(() => {
-                        qrContainer.hidden = false;
-                        console.log('✅ QR container reaberto com nova câmera');
-                    }, 300);
-                } else {
-                    console.log('⚠️ QR container não encontrado ou já oculto');
-                }
-            };
-            
-            console.log('✅ Sistema de câmera inicializado');
-            console.log('🔍 window.switchCamera type:', typeof window.switchCamera);
-        }, 1000); // 1 segundo de delay
-        
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output("qr-code-data", "children"),  # Dummy output
-    Input("url-redirect", "pathname")
-)
-
-# Callback clientside para trocar câmera
-clientside_callback(
-    """
-    function(n_clicks) {
-        if (n_clicks) {
-            console.log('🔄 Botão trocar câmera clicado:', n_clicks);
-            if (typeof window.switchCamera === 'function') {
-                window.switchCamera();
-                console.log('✅ Função switchCamera executada');
-            } else {
-                console.error('❌ Função switchCamera não encontrada');
-                console.log('window.switchCamera type:', typeof window.switchCamera);
-            }
-        }
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output("switch-camera-btn", "style"),  # Usar style em vez de n_clicks
-    Input("switch-camera-btn", "n_clicks")
-)
 
 # Callback para validar o código e habilitar/desabilitar botão
 @callback(
