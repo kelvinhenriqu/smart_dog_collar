@@ -15,6 +15,12 @@ dash.register_page(__name__, path='/dashboard')
 layout  = html.Div([
     dcc.Interval(id="interval-update", interval=500, n_intervals=0),
     dcc.Tooltip(id="tooltip"),
+    dcc.Store(id="fullscreen-state", data=False),
+    html.Button([
+        html.I(className="bi bi-x-lg", style={"marginRight": "8px"}),
+        "Close Fullscreen"
+    ], id="close-fullscreen-btn", className="close-fullscreen-btn", style={"display": "none"}),
+    html.Div(id="fullscreen-overlay", className="fullscreen-overlay", style={"display": "none"}),
     
     dbc.Row([ #Header Row
         dbc.Col([
@@ -22,7 +28,7 @@ layout  = html.Div([
                 html.I(className="bi bi-geo-alt-fill", style={"marginRight": "15px", "color": "#fbbf24"}),
                 "Dashboard Smart Collar - TCC UNIFACCAMP"
             ], className="dashboard-title"),
-        ], className="dashboard-header", width=10),
+        ], xs=12, sm=12, md=10, lg=10, className="dashboard-header"),
 
         dbc.Col([
             dcc.Upload(
@@ -31,7 +37,7 @@ layout  = html.Div([
                 multiple=False,
                 className="profile-icon-btn",
             )
-        ], className="dashboard-header", width=2),
+        ], xs=12, sm=12, md=2, lg=2, className="dashboard-header"),
     ], align="center", justify="between", className="dashboard-header-row"),
 
     html.Div([ #Main Content
@@ -43,8 +49,9 @@ layout  = html.Div([
                             html.I(className="bi bi-map", style={"marginRight": "10px", "color": "#6366f1"}),
                             "Last known location & Tracking"
                         ], className="card-title"),                        
-                    ], width=8),
-
+                    ], width=12),
+                ]),
+                dbc.Row([  
                     dbc.Col([
                         dcc.Dropdown(
                             id="period-dropdown",
@@ -52,17 +59,24 @@ layout  = html.Div([
                                 {"label": "📍 Last 5 minutes", "value": 5},
                                 {"label": "🕐 Last 30 minutes", "value": 30},
                                 {"label": "⏰ Last 60 minutes", "value": 60},
+                                {"label": "📅 Last day", "value": 1440},
+                                {"label": "📆 Last 3 days", "value": 4320},
                             ],
                             value=60,
                             clearable=False,
                             style={
-                                "width": "220px",
+                                "width": "100%",
                                 "fontWeight": "500"
                             }
                         )
-                    ], width=4),   
+                    ], style={"paddingRight": "10px", "width": "90%"}),
+                    dbc.Col([
+                        html.Button([
+                            html.I(className="bi bi-arrows-fullscreen", style={"fontSize": "1.2rem"})
+                        ], id="fullscreen-btn", className="fullscreen-btn", n_clicks=0)
+                    ], style={"width": "10%","display":"contents"}),
 
-                ]),
+                ], style={"marginBottom": "15px"}, class_name="history_selection_row"),
                 dbc.Row([
                     dcc.Graph(
                         id="loc-map", 
@@ -72,9 +86,9 @@ layout  = html.Div([
                             'doubleClick': 'reset+autosize'
                         }
                     ),
-                ])
-        ], className="location-card"),
-        ]),
+                ], id="map-container")
+            ], className="location-card"),
+        ], className="location-section"),
         dbc.Card([
             dbc.CardBody([
                 html.H3([
@@ -101,31 +115,68 @@ def update_profile_icon(image_content):
     return no_update
 
 @callback(
+    Output("map-container", "style"),
+    Output("fullscreen-btn", "children"),
+    Output("fullscreen-state", "data"),
+    Output("close-fullscreen-btn", "style"),
+    Output("fullscreen-overlay", "style"),
+    Input("fullscreen-btn", "n_clicks"),
+    Input("close-fullscreen-btn", "n_clicks"),
+    Input("fullscreen-state", "data"),
+    prevent_initial_call=True
+)
+def toggle_fullscreen(fullscreen_clicks, close_clicks, is_fullscreen):
+    ctx = dash.callback_context
+    
+    if not ctx.triggered:
+        return {}, [html.I(className="bi bi-arrows-fullscreen", style={"fontSize": "1.2rem"})], False, {"display": "none"}, {"display": "none"}
+    
+    button_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    
+    # Toggle state based on which button was clicked
+    if button_id == "fullscreen-btn":
+        new_state = not is_fullscreen
+    elif button_id == "close-fullscreen-btn":
+        new_state = False
+    else:
+        new_state = is_fullscreen
+    
+    if new_state:
+        # Fullscreen mode
+        return {
+            "position": "fixed",
+            "top": "0",
+            "left": "0",
+            "width": "100vw",
+            "height": "100vh",
+            "zIndex": "9999",
+            "backgroundColor": "#ffffff",
+            "padding": "60px 20px 20px 20px",
+            "margin": "0"
+        }, [html.I(className="bi bi-arrows-fullscreen", style={"fontSize": "1.2rem"})], True, {
+            "display": "flex",
+            "position": "fixed",
+            "top": "10px",
+            "right": "10px",
+            "zIndex": "10000"
+        }, {
+            "display": "block"
+        }
+    else:
+        # Normal mode
+        return {}, [html.I(className="bi bi-arrows-fullscreen", style={"fontSize": "1.2rem"})], False, {"display": "none"}, {"display": "none"}
+
+@callback(
     Output("loc-map", "figure"),
     Output("additional-data", "children"),
     Input("interval-update", "n_intervals"),
     Input("period-dropdown", "value")
 )
 def update_dashboard(n, period):
-    '''try:
-        url = f"http://127.0.0.1:8050/map/history?period={period}"
-        resp = requests.get(url)
-        history = resp.json().get('history', [])
-    except Exception as e:
-        print(f"Error fetching history: {e}")
-        history = []'''
 
     history = get_location_history(period)
 
     data = get_stored_data()
-
-    '''try:
-        url = f"http://127.0.0.1:8050/data/sensor"
-        resp = requests.get(url)
-        data = resp.json()
-    except Exception as e:
-        print(f"Error fetching data: {e}")
-        data = []'''
 
     if not history:
         print("No tracking data available.")
@@ -151,6 +202,14 @@ def update_dashboard(n, period):
         last = history[-1]
         df = pd.DataFrame(history)
 
+        if period < 60:
+            fig_title = f"🗺️ Pet tracking - Last {period} minutes"
+        elif period < 1440:
+            fig_title = f"🗺️ Pet tracking - Last {period // 60} hours"
+        else:
+            fig_title = f"🗺️ Pet tracking - Last {period // 1440} days"
+
+
         fig = px.scatter_map(
             df,
             lat="lat",
@@ -158,7 +217,7 @@ def update_dashboard(n, period):
             hover_name="timestamp",
             zoom=16,
             center={"lat": last['lat'], "lon": last['lon']},
-            title=f"🗺️ Pet tracking - Last {period} minutes",
+            title=fig_title,
             color_discrete_sequence=['#6366f1']
         )
         fig.add_trace(go.Scattermap(
@@ -173,20 +232,40 @@ def update_dashboard(n, period):
             mapbox_style="open-street-map",
             margin={"r":0,"t":40,"l":0,"b":0},
             title={
-                'text': f"🗺️ Pet tracking - Last {period} minutes",
+                'text': f"{fig_title}",
                 'x': 0.5,
                 'xanchor': 'center',
                 'font': {'size': 18, 'family': 'Poppins, sans-serif', 'color': '#1e293b'}
             },
             font={'family': 'Inter, sans-serif'},
             paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
+            plot_bgcolor='rgba(0,0,0,0)',
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=0.01,
+                xanchor="center",
+                x=0.5,
+                bgcolor="rgba(255,255,255,0.9)",
+                bordercolor="#e2e8f0",
+                borderwidth=1,
+                font=dict(size=11)
+            ),
+            height=600
         )
 
 
     battery_level = data.get("battery_level", "-")
     heart_rate = data.get("heart_rate", "-")
     pet_body_temperature = data.get("pet_body_temperature", "-")
+    vel = data.get("velocidade", 0)
+    try:
+        velocidade = round(float(vel), 1)
+    except (ValueError, TypeError):
+        velocidade = "-"
+    satelites = data.get("satelites", "-")
+    status = data.get("status", "-")
 
     # Determine status indicators based on values
     def get_battery_status(level):
@@ -253,11 +332,18 @@ def update_dashboard(n, period):
         ], className="data-metric"),
         
         html.Div([
-            html.H5([
-                html.Span(className="status-indicator status-online"),
-                "📡 Connection Status"
-            ]),
-            html.P("Online" if any([battery_level != "-", heart_rate != "-", pet_body_temperature != "-"]) else "Offline")
+            html.H5("🚀 Velocidade Estimada"),
+            html.P(f"{velocidade} km/h" if velocidade != "-" else "No Data")
+        ], className="data-metric"),
+        
+        html.Div([
+            html.H5("🛰️ Satélites Conectados"),
+            html.P(f"{satelites}" if satelites != "-" else "No Signal")
+        ], className="data-metric"),
+        
+        html.Div([
+            html.H5("📡 Connection Status"),
+            html.P(f"{status}")
         ], className="data-metric"),
     ])
 

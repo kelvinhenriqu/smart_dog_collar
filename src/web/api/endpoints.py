@@ -98,9 +98,23 @@ def update_data():
     """
     Input: JSON object with any of the stored keys. Used mainly for testing in Postman.
     """
-    data = request.get_json()
-    stored_data.update(data)
-    return jsonify({'status': 'success'}), 200
+    try:
+        data = request.get_json()
+        if data is None:
+            return jsonify({'status': 'error', 'message': 'No JSON data received'}), 400
+        
+
+        #print(f"Received data: {data}")  # Debug log
+        stored_data.update(data)
+        #print(f"Updated stored_data: {stored_data}")  # Debug log
+
+        if data.get('lat') is not None and data.get('lon') is not None:
+            save_location(data['lat'], data['lon'])
+            
+        return jsonify({'status': 'success', 'updated_data': stored_data}), 200
+    except Exception as e:
+        print(f"Error in /data/update: {str(e)}")  # Debug log
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @endpoints.route('/data/sensor', methods=['GET'])
 def get_data():
