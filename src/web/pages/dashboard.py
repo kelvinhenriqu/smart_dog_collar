@@ -5,8 +5,7 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-from api.endpoints import endpoints, get_location_history, get_stored_data
-import requests
+from api.endpoints import get_location_history, get_stored_data
 
 
 
@@ -26,7 +25,7 @@ layout  = html.Div([
         dbc.Col([
             html.H1([
                 html.I(className="bi bi-geo-alt-fill", style={"marginRight": "15px", "color": "#fbbf24"}),
-                "Dashboard Smart Collar - TCC UNIFACCAMP"
+                "Smart Collar Dashboard - TCC UNIFACCAMP"
             ], className="dashboard-title"),
         ], xs=12, sm=12, md=10, lg=10, className="dashboard-header"),
 
@@ -47,7 +46,7 @@ layout  = html.Div([
                     dbc.Col([                
                         html.H3([
                             html.I(className="bi bi-map", style={"marginRight": "10px", "color": "#6366f1"}),
-                            "Last known location & Tracking"
+                            "Last Known Location & Tracking"
                         ], className="card-title"),                        
                     ], width=12),
                 ]),
@@ -197,6 +196,40 @@ def update_dashboard(n, period):
                 )
             ]
         )
+        
+        additional_cards = html.Div([ #When no data is available
+            html.Div([
+                html.H5([html.Span(className=f"status-indicator status-offline"),"🔋 Battery Level"]),
+                html.P(f"No Data")
+            ], className="data-metric"),
+            
+            html.Div([
+                html.H5([html.Span(className=f"status-indicator status-offline"),"❤️ Heart Rate"]),
+                html.P(f"No Data")
+            ], className="data-metric"),
+            
+            html.Div([
+                html.H5([html.Span(className=f"status-indicator status-offline"),"🌡️ Body Temperature"]),
+                    html.P(f"No Data")
+            ], className="data-metric"),
+            
+            html.Div([
+                html.H5("🚀 Estimated Speed"),
+                html.P(f"No Data")
+            ], className="data-metric"),
+            
+            html.Div([
+                html.H5("🛰️ Connected Satellites"),
+                html.P(f"No Data")
+            ], className="data-metric"),
+            
+            html.Div([
+                html.H5("📡 Connection Status"),
+                html.P(f"No Data")
+            ], className="data-metric"),
+        ])  # When no data is available
+        
+        return fig, additional_cards
 
     else:
         last = history[-1]
@@ -332,12 +365,12 @@ def update_dashboard(n, period):
         ], className="data-metric"),
         
         html.Div([
-            html.H5("🚀 Velocidade Estimada"),
+            html.H5("🚀 Estimated Speed"),
             html.P(f"{velocidade} km/h" if velocidade != "-" else "No Data")
         ], className="data-metric"),
         
         html.Div([
-            html.H5("🛰️ Satélites Conectados"),
+            html.H5("🛰️ Connected Satellites"),
             html.P(f"{satelites}" if satelites != "-" else "No Signal")
         ], className="data-metric"),
         

@@ -13,9 +13,9 @@ layout = html.Div([
     html.Div([
         # Container principal centralizado
         html.Div([
-            # Logo ou título
+            # Logo or title
             html.Div([
-                html.H1("🐕 Smart Dog Collar", 
+                html.H1("Smart Dog Collar", 
                        className="login-title",
                        style={
                            'textAlign': 'center',
@@ -49,12 +49,12 @@ layout = html.Div([
                             'objectFit': 'cover'
                         }
                     ),
-                    html.P("Aponte a câmera para o QR Code", 
+                    html.P("Point the camera at the QR Code", 
                                style={'textAlign': 'center', 'marginTop': '1rem', 'color': '#64748b'}),
                     
-                    # Botão para alternar câmera
+                    # Button to switch camera
                     html.Button(
-                        "🔄 Trocar Câmera",
+                        "Switch Camera",
                         id="switch-camera-btn",
                         style={
                             'backgroundColor': '#64748b',
@@ -70,7 +70,7 @@ layout = html.Div([
                 ], hidden=True, id="qrcode-container", style={'position': 'relative', 'padding': '1rem', 'textAlign': 'center'}),
                         
                 
-                html.H3("Acesso do PET", 
+                html.H3("PET Access", 
                        style={
                            'textAlign': 'center',
                            'color': '#1e293b',
@@ -78,7 +78,7 @@ layout = html.Div([
                            'fontWeight': '600'
                        }),
                 
-                html.P("Insira o código de 6 dígitos da coleira ou escaneie o QR Code",
+                html.P("Enter the 6-digit collar code or scan the QR Code",
                       style={
                           'textAlign': 'center',
                           'color': '#64748b',
@@ -109,10 +109,10 @@ layout = html.Div([
                     )
                 ], style={'marginBottom': '1.5rem'}),
                 
-                # Divisor
+                # Divider
                 html.Div([
                     html.Hr(style={'margin': '0', 'border': '1px solid #e2e8f0', 'width': '45%'}),
-                    html.Span("OU", style={
+                    html.Span("OR", style={
                         'padding': '0 1rem',
                         'color': '#64748b',
                         'fontSize': '0.9rem',
@@ -126,10 +126,10 @@ layout = html.Div([
                     'marginBottom': '1.5rem'
                 }),
                 
-                # Botão QR Code
+                # QR Code button
                 html.Button([
                     html.I(className="fas fa-qrcode", style={'marginRight': '0.5rem'}),
-                    "Escanear QR Code"
+                    "Scan QR Code"
                 ], 
                 id="qr-scan-btn",
                 className="qr-button",
@@ -147,9 +147,9 @@ layout = html.Div([
                     'marginBottom': '2rem'
                 }),
                 
-                # Botão de acesso
+                # Access button
                 html.Button([
-                    "Acessar Dashboard"
+                    "Access Dashboard"
                 ], 
                 id="access-btn",
                 className="access-button",
@@ -168,7 +168,7 @@ layout = html.Div([
                     'opacity': '0.5'
                 }),
                 
-                # Mensagem de status
+                # Status message
                 html.Div(id="login-status", style={'marginTop': '1rem'})
                 
             ], className="login-card", style={
@@ -196,64 +196,64 @@ layout = html.Div([
     })
 ])
 
-# Callback clientside para inicializar o sistema de câmera
+# Clientside callback to initialize camera system
 clientside_callback(
     """
     function(pathname) {
-        // Aguardar um pouco para garantir que a página carregou
+        // Wait a bit to ensure the page has loaded
         setTimeout(function() {
-            console.log('🎥 Inicializando sistema de câmera (com delay)');
+            console.log('Initializing camera system (with delay)');
             
-            // Definir variável global para controlar câmera
+            // Define global variable to control camera
             if (!window.currentFacingMode) {
-                window.currentFacingMode = 'environment'; // Câmera traseira por padrão
-                console.log('📷 Câmera padrão definida como traseira');
+                window.currentFacingMode = 'environment'; // Rear camera by default
+                console.log('Default camera set to rear');
             }
             
-            // Interceptar getUserMedia apenas uma vez
+            // Intercept getUserMedia only once
             if (!window.cameraIntercepted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
                 const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
                 navigator.mediaDevices.getUserMedia = function(constraints) {
-                    console.log('📷 getUserMedia interceptado, constraints originais:', constraints);
+                    console.log('getUserMedia intercepted, original constraints:', constraints);
                     
                     if (constraints && constraints.video) {
-                        // Aplicar configuração de câmera
+                        // Apply camera configuration
                         if (typeof constraints.video === 'object') {
                             constraints.video.facingMode = { ideal: window.currentFacingMode };
                         } else {
                             constraints.video = { facingMode: { ideal: window.currentFacingMode } };
                         }
-                        console.log('📷 Usando câmera:', window.currentFacingMode, constraints);
+                        console.log('Using camera:', window.currentFacingMode, constraints);
                     }
                     return originalGetUserMedia(constraints);
                 };
                 window.cameraIntercepted = true;
-                console.log('✅ getUserMedia interceptado com sucesso');
+                console.log('getUserMedia successfully intercepted');
             }
             
-            // Definir função para trocar câmera
+            // Define function to switch camera
             window.switchCamera = function() {
                 const oldMode = window.currentFacingMode;
                 window.currentFacingMode = window.currentFacingMode === 'environment' ? 'user' : 'environment';
-                console.log('🔄 Trocando câmera de', oldMode, 'para', window.currentFacingMode);
+                console.log('Switching camera from', oldMode, 'to', window.currentFacingMode);
                 
-                // Recarregar o QR reader
+                // Reload QR reader
                 const qrContainer = document.getElementById('qrcode-container');
                 if (qrContainer && !qrContainer.hidden) {
-                    console.log('🔄 Recarregando QR container');
+                    console.log('Reloading QR container');
                     qrContainer.hidden = true;
                     setTimeout(() => {
                         qrContainer.hidden = false;
-                        console.log('✅ QR container reaberto com nova câmera');
+                        console.log('QR container reopened with new camera');
                     }, 300);
                 } else {
-                    console.log('⚠️ QR container não encontrado ou já oculto');
+                    console.log('QR container not found or already hidden');
                 }
             };
             
-            console.log('✅ Sistema de câmera inicializado');
-            console.log('🔍 window.switchCamera type:', typeof window.switchCamera);
-        }, 1000); // 1 segundo de delay
+            console.log('Camera system initialized');
+            console.log('window.switchCamera type:', typeof window.switchCamera);
+        }, 1000); // 1 second delay
         
         return window.dash_clientside.no_update;
     }
@@ -262,17 +262,17 @@ clientside_callback(
     Input("url-redirect", "pathname")
 )
 
-# Callback clientside para trocar câmera
+# Clientside callback to switch camera
 clientside_callback(
     """
     function(n_clicks) {
         if (n_clicks) {
-            console.log('🔄 Botão trocar câmera clicado:', n_clicks);
+            console.log('Switch camera button clicked:', n_clicks);
             if (typeof window.switchCamera === 'function') {
                 window.switchCamera();
-                console.log('✅ Função switchCamera executada');
+                console.log('switchCamera function executed');
             } else {
-                console.error('❌ Função switchCamera não encontrada');
+                console.error('switchCamera function not found');
                 console.log('window.switchCamera type:', typeof window.switchCamera);
             }
         }
@@ -283,7 +283,7 @@ clientside_callback(
     Input("switch-camera-btn", "n_clicks")
 )
 
-# Callback para validar o código e habilitar/desabilitar botão
+# Callback to validate code and enable/disable button
 @callback(
     [Output("access-btn", "disabled"),
      Output("access-btn", "style"),
@@ -306,7 +306,7 @@ def validate_pet_code(code):
             'opacity': '0.5'
         }, ""
     
-    # Valida se o código tem 6 caracteres alfanuméricos
+    # Validate if code has 6 alphanumeric characters
     if len(code) == 6 and code.isalnum():
         return False, {
             'width': '100%',
@@ -322,7 +322,7 @@ def validate_pet_code(code):
             'opacity': '1'
         }, html.Div([
             html.I(className="fas fa-check-circle", style={'color': '#10b981', 'marginRight': '0.5rem'}),
-            "Código válido!"
+            "Valid code!"
         ], style={'textAlign': 'center', 'color': '#10b981', 'fontSize': '0.9rem'})
     else:
         return True, {
@@ -339,10 +339,10 @@ def validate_pet_code(code):
             'opacity': '0.5'
         }, html.Div([
             html.I(className="fas fa-exclamation-circle", style={'color': '#ef4444', 'marginRight': '0.5rem'}),
-            "Código deve ter 6 caracteres alfanuméricos"
+            "Code must have 6 alphanumeric characters"
         ], style={'textAlign': 'center', 'color': '#ef4444', 'fontSize': '0.9rem'})
 
-# Callback para o botão QR Code (placeholder por enquanto)
+# Callback for QR Code button (placeholder for now)
 @callback(
     Output("qrcode-container", "hidden", allow_duplicate=True),    
     Input("qr-scan-btn", "n_clicks"),
