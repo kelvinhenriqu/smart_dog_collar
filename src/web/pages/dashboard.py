@@ -1,12 +1,13 @@
 import dash
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 from dash import dcc, html, no_update, callback
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from api.endpoints import get_location_history, get_stored_data
-
+import os
+import base64
 
 
 dash.register_page(__name__, path='/dashboard')
@@ -15,6 +16,7 @@ layout  = html.Div([
     dcc.Interval(id="interval-update", interval=500, n_intervals=0),
     dcc.Tooltip(id="tooltip"),
     dcc.Store(id="fullscreen-state", data=False),
+    
     html.Button([
         html.I(className="bi bi-x-lg", style={"marginRight": "8px"}),
         "Close Fullscreen"
@@ -32,10 +34,10 @@ layout  = html.Div([
         dbc.Col([
             dcc.Upload(
                 id="upload-data",
-                children=html.Button(className="bi bi-person",style={"fontSize": "2.5rem"},id="profile-icon-btn"),
                 multiple=False,
                 className="profile-icon-btn",
-            )
+            ),
+            html.Div("", id="profile-username", className="profile-username")
         ], xs=12, sm=12, md=2, lg=2, className="dashboard-header"),
     ], align="center", justify="between", className="dashboard-header-row"),
 
@@ -101,16 +103,128 @@ layout  = html.Div([
 
 ])
 
+@callback(
+    Output("profile-username", "children"),
+    Output("upload-data", "children"),
+    Input("logged-user", "data"),
+    Input("url-redirect", "pathname"),
+)
+def update_profile_info(logged_user, pathname):
+    if pathname != "/dashboard":
+        return no_update, no_update
+
+    if not logged_user:
+        logged_user = "dog"
+        
+    pet_name = logged_user
+    username_display = f"Hello, {pet_name}!"
+    
+    # Try to find pet photo in petphotos/ directory
+    photo_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
+    petphotos_dir = os.path.join(os.path.dirname(__file__), '..', 'petphotos')
+    photo_found = False
+    
+    for ext in photo_extensions:
+        photo_path = os.path.join(petphotos_dir, f"{pet_name}{ext}")
+        if os.path.exists(photo_path):
+            try:
+                with open(photo_path, 'rb') as f:
+                    encoded_image = base64.b64encode(f.read()).decode('ascii')
+                mime_type = 'image/jpeg' if ext in ['.jpg', '.jpeg'] else f'image/{ext[1:]}'
+                profile_icon = html.Img(
+                    src=f'data:{mime_type};base64,{encoded_image}',
+                    style={
+                        "height": "100px",
+                        "width": "100px",
+                        "borderRadius": "100px",
+                        "border": "2px solid",
+                        "objectFit": "cover"
+                    }
+                )
+                photo_found = True
+                break
+            except Exception as e:
+                print(f"Error loading photo: {e}")
+    
+    # Fallback to default icon if no photo found
+    if not photo_found:
+        try:
+            photo_path = os.path.join(petphotos_dir, f"dog.png")
+            with open(photo_path, 'rb') as f:
+                encoded_image = base64.b64encode(f.read()).decode('ascii')
+            mime_type = 'image/jpeg' if ext in ['.jpg', '.jpeg'] else f'image/{ext[1:]}'
+            profile_icon = html.Img(
+                src=f'data:{mime_type};base64,{encoded_image}',
+                style={
+                    "height": "100px",
+                    "width": "100px",
+                    "borderRadius": "100px",
+                    "border": "2px solid",
+                    "objectFit": "cover"
+                }
+            )
+        except Exception as e:
+            print(f"Error loading photo: {e}")
+            
+            profile_icon = html.I(className="bi bi-person", style={
+                "fontSize": "2.5rem",
+                "height": "100px",
+                "width": "100px",
+                "borderRadius": "100px",
+                "border": "2px solid",
+                "objectFit": "cover"
+            })
+    
+    return username_display, profile_icon
 
 @callback(
-    Output("upload-data", "children"),
+    Output("upload-data", "children", allow_duplicate=True),
     Input("upload-data", "contents"),
+    Input("logged-user", "data"),
+    prevent_initial_call=True
 )
-def update_profile_icon(image_content):
-    if image_content is not None:
-        data = html.Img(src=image_content, style={"height": "100px", "width": "100px", "borderRadius": "100px", "border": "2px solid"})
+def update_profile_icon(image_content, logged_user):
+    if image_content is not None and logged_user:
+        # Save the uploaded image to petphotos directory
+        try:
+            # Extract the image data from the base64 string
+            content_type, content_string = image_content.split(',')
+            decoded_image = base64.b64decode(content_string)
+            
+            # Determine file extension from content type
+            if 'image/png' in content_type:
+                ext = '.png'
+            elif 'image/jpeg' in content_type or 'image/jpg' in content_type:
+                ext = '.jpg'
+            elif 'image/gif' in content_type:
+                ext = '.gif'
+            elif 'image/webp' in content_type:
+                ext = '.webp'
+            else:
+                ext = '.png'  # default
+            
+            # Save to petphotos directory
+            petphotos_dir = os.path.join(os.path.dirname(__file__), '..', 'petphotos')
+            os.makedirs(petphotos_dir, exist_ok=True)
+            
+            # Remove old photos with different extensions
+            photo_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
+            for old_ext in photo_extensions:
+                old_photo_path = os.path.join(petphotos_dir, f"{logged_user}{old_ext}")
+                if os.path.exists(old_photo_path):
+                    os.remove(old_photo_path)
+            
+            # Save new photo
+            photo_path = os.path.join(petphotos_dir, f"{logged_user}{ext}")
+            with open(photo_path, 'wb') as f:
+                f.write(decoded_image)
+            
+            print(f"Photo saved: {photo_path}")
+        except Exception as e:
+            print(f"Error saving photo: {e}")
+        
+        data = html.Img(src=image_content, style={"height": "100px", "width": "100px", "borderRadius": "100px", "border": "2px solid", "objectFit": "cover"})
         return data
-    
     return no_update
 
 @callback(

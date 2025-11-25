@@ -1,12 +1,14 @@
 import dash
-from dash import dcc, html, Input, Output, callback, no_update, ctx, clientside_callback, ClientsideFunction
+from dash import dcc, html, Input,State, Output, callback, no_update, ctx, clientside_callback, ClientsideFunction
 import dash_bootstrap_components as dbc
 import dash_qr_manager as dqm
+import json
+import os
 
 dash.register_page(__name__, path="/login")
 
 layout = html.Div([
-    dcc.Location(id="url-redirect", refresh='callback-nav'),
+    dcc.Location(id="url-redirect-login", refresh='callback-nav'),
 
     html.Div(id='qr-code-data'),
     
@@ -47,7 +49,8 @@ layout = html.Div([
                         videoStyle={
                             'borderRadius': '12px',
                             'objectFit': 'cover'
-                        }
+                        },
+                        constraints={'facingMode': 'environment'}
                     ),
                     html.P("Point the camera at the QR Code", 
                                style={'textAlign': 'center', 'marginTop': '1rem', 'color': '#64748b'}),
@@ -196,92 +199,7 @@ layout = html.Div([
     })
 ])
 
-# Clientside callback to initialize camera system
-clientside_callback(
-    """
-    function(pathname) {
-        // Wait a bit to ensure the page has loaded
-        setTimeout(function() {
-            console.log('Initializing camera system (with delay)');
-            
-            // Define global variable to control camera
-            if (!window.currentFacingMode) {
-                window.currentFacingMode = 'environment'; // Rear camera by default
-                console.log('Default camera set to rear');
-            }
-            
-            // Intercept getUserMedia only once
-            if (!window.cameraIntercepted && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
-                navigator.mediaDevices.getUserMedia = function(constraints) {
-                    console.log('getUserMedia intercepted, original constraints:', constraints);
-                    
-                    if (constraints && constraints.video) {
-                        // Apply camera configuration
-                        if (typeof constraints.video === 'object') {
-                            constraints.video.facingMode = { ideal: window.currentFacingMode };
-                        } else {
-                            constraints.video = { facingMode: { ideal: window.currentFacingMode } };
-                        }
-                        console.log('Using camera:', window.currentFacingMode, constraints);
-                    }
-                    return originalGetUserMedia(constraints);
-                };
-                window.cameraIntercepted = true;
-                console.log('getUserMedia successfully intercepted');
-            }
-            
-            // Define function to switch camera
-            window.switchCamera = function() {
-                const oldMode = window.currentFacingMode;
-                window.currentFacingMode = window.currentFacingMode === 'environment' ? 'user' : 'environment';
-                console.log('Switching camera from', oldMode, 'to', window.currentFacingMode);
-                
-                // Reload QR reader
-                const qrContainer = document.getElementById('qrcode-container');
-                if (qrContainer && !qrContainer.hidden) {
-                    console.log('Reloading QR container');
-                    qrContainer.hidden = true;
-                    setTimeout(() => {
-                        qrContainer.hidden = false;
-                        console.log('QR container reopened with new camera');
-                    }, 300);
-                } else {
-                    console.log('QR container not found or already hidden');
-                }
-            };
-            
-            console.log('Camera system initialized');
-            console.log('window.switchCamera type:', typeof window.switchCamera);
-        }, 1000); // 1 second delay
-        
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output("qr-code-data", "children"),  # Dummy output
-    Input("url-redirect", "pathname")
-)
 
-# Clientside callback to switch camera
-clientside_callback(
-    """
-    function(n_clicks) {
-        if (n_clicks) {
-            console.log('Switch camera button clicked:', n_clicks);
-            if (typeof window.switchCamera === 'function') {
-                window.switchCamera();
-                console.log('switchCamera function executed');
-            } else {
-                console.error('switchCamera function not found');
-                console.log('window.switchCamera type:', typeof window.switchCamera);
-            }
-        }
-        return window.dash_clientside.no_update;
-    }
-    """,
-    Output("switch-camera-btn", "style"),  # Usar style em vez de n_clicks
-    Input("switch-camera-btn", "n_clicks")
-)
 
 # Callback to validate code and enable/disable button
 @callback(
@@ -356,13 +274,49 @@ def simulate_qr_scan(open_click, close_click):
     return True
 
 @callback(
-    Output("url-redirect", "href"),
-    Input("access-btn", "n_clicks")
+    Output("url-redirect-login", "href"),
+    Output("logged-user", "data"),
+    Output("login-status", "children", allow_duplicate=True),
+    Input("access-btn", "n_clicks"),
+    State("pet-code-input", "value"),
+    prevent_initial_call=True
 )
-def access_dashboard(n_clicks):
-    if n_clicks:        
-        return "dashboard"
-    return no_update
+def access_dashboard(n_clicks, code):
+    if n_clicks and code:
+        # Load allowed users from JSON file
+        json_path = os.path.join(os.path.dirname(__file__), '..', 'allowed_users.json')
+        try:
+            with open(json_path, 'r') as f:
+                data = json.load(f)
+                allowed_users_list = data.get('allowed_users', [])
+        except Exception as e:
+            print(f"Error loading allowed_users.json: {e}")
+            return no_update,no_update,no_update
+
+        entered = code.strip().upper()
+        matched_pet = None
+        
+        for user in allowed_users_list:
+            username = str(user.get('username', '')).strip().upper()
+            pet_name = user.get('pet_name', '')
+            
+            if entered == username or entered == pet_name.strip().upper():
+                matched_pet = pet_name
+                break
+
+        if not matched_pet:
+            print("Unauthorized user:", code)
+            return no_update,no_update,html.Div([
+                html.I(className="fas fa-exclamation-circle", style={'color': '#ef4444', 'marginRight': '0.5rem'}),
+                "Unauthorized user"
+            ], style={'textAlign': 'center', 'color': '#ef4444', 'fontSize': '0.9rem'})
+
+        # store the pet name so the existing return sends it to the logged-user store
+        code = matched_pet
+        
+        print("Accessing dashboard with code:", code)
+        return "dashboard", code, no_update
+    return no_update, no_update, no_update
 
 @callback(
     Output("pet-code-input", "value"),

@@ -1,0 +1,19 @@
+{
+    "allowed_users": [
+        {
+            "username": "123456",
+            "pet_name": "Rex",
+            "description": "Demo user - Dog collar ID"
+        },
+        {
+            "username": "ABC123",
+            "pet_name": "Bella",
+            "description": "Demo user - Alphanumeric collar ID"
+        },
+        {
+            "username": "HIC279",
+            "pet_name": "Mochi",
+            "description": "Playful rescue who loves belly rubs and chasing squirrels"
+        }
+    ]
+}
